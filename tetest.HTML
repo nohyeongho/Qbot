@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모델 및 어레이 정보 검색기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B5CF6',
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dark .glass-effect {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen transition-colors duration-300">
+    <div class="max-w-2xl mx-auto px-4 py-12">
+        <!-- 헤더 -->
+        <header class="text-center mb-10">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4">
+                <span id="headerIcon" class="material-symbols-outlined text-primary text-3xl">search_insights</span>
+            </div>
+            <h1 id="headerTitle" class="text-3xl font-bold text-slate-900 dark:text-white mb-2">통합 정보 검색기</h1>
+            <p id="headerDesc" class="text-slate-500 dark:text-slate-400">필요한 정보를 즉시 검색하고 확인하세요.</p>
+        </header>
+
+        <!-- 탭 메뉴 -->
+        <div class="flex p-1 bg-slate-200/50 dark:bg-slate-900/50 rounded-2xl mb-8">
+            <button id="tabArray" onclick="switchMode('array')"
+                class="flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-primary shadow-sm">
+                <span class="material-symbols-outlined text-[20px]">tv</span>
+                어레이 검색
+            </button>
+            <button id="tabPower" onclick="switchMode('power')"
+                class="flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                <span class="material-symbols-outlined text-[20px]">history_toggle_off</span>
+                Power Off History
+            </button>
+        </div>
+
+        <!-- 검색창 -->
+        <div class="relative mb-8">
+            <input type="text" id="searchInput" placeholder="모델명 입력 (예: 29MT48DF, 55UJ7240)"
+                class="w-full h-16 pl-14 pr-6 rounded-2xl bg-white dark:bg-slate-900 border-2 border-transparent focus:border-primary shadow-xl dark:shadow-slate-900/50 text-lg outline-none transition-all dark:text-white placeholder-slate-400">
+            <span
+                class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+
+            <!-- 자동완성 목록 컨테이너 -->
+            <div id="suggestionList"
+                class="hidden absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 z-50 overflow-hidden max-h-64 overflow-y-auto custom-scrollbar">
+                <!-- 아이템들이 여기에 동적으로 추가됨 -->
+            </div>
+        </div>
+
+        <!-- 결과 영역 -->
+        <div id="resultArea" class="space-y-4">
+            <!-- 초기 상태 안내 -->
+            <div id="emptyState" class="text-center py-12 text-slate-400">
+                <span class="material-symbols-outlined text-5xl mb-2">manage_search</span>
+                <p>모델명을 검색해 주세요.</p>
+            </div>
+
+            <!-- 결과 카드 -->
+            <div id="resultCard"
+                class="hidden glass-effect rounded-3xl p-8 shadow-2xl transform transition-all duration-300 scale-95 opacity-0">
+                <div class="flex items-center gap-3 mb-6">
+                    <h2 id="resultTitle" class="text-2xl font-bold text-slate-900 dark:text-white">결과명</h2>
+                    <span id="resultBadge"
+                        class="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs font-bold rounded-full">검색
+                        성공</span>
+                </div>
+
+                <!-- 어레이 결과 레이아웃 -->
+                <div id="arrayLayout" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Direct Array</h3>
+                        <div class="space-y-3">
+                            <div
+                                class="info-item flex flex-col p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                <span class="text-xs text-slate-400 mb-1">Direct Array1</span>
+                                <span id="valArray1" class="font-mono font-bold text-lg dark:text-white">-</span>
+                            </div>
+                            <div
+                                class="info-item flex flex-col p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                <span class="text-xs text-slate-400 mb-1">Direct Array2</span>
+                                <span id="valArray2" class="font-mono font-bold text-lg dark:text-white">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Edge Information</h3>
+                        <div class="space-y-3">
+                            <div
+                                class="info-item flex flex-col p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                <span class="text-xs text-slate-400 mb-1">Edge1</span>
+                                <span id="valEdge1" class="font-mono font-bold text-lg dark:text-white">-</span>
+                            </div>
+                            <div
+                                class="info-item flex flex-col p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                <span class="text-xs text-slate-400 mb-1">Edge2</span>
+                                <span id="valEdge2" class="font-mono font-bold text-lg dark:text-white">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Power Off 결과 레이아웃 -->
+                <div id="powerLayout" class="hidden space-y-4">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">오류 발생 원인 및 설명</h3>
+                    <div class="p-6 rounded-2xl bg-primary/5 border border-primary/20 text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line"
+                        id="valDescription">
+                        설명이 여기에 표시됩니다.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 결과 없음 안내 -->
+            <div id="notFoundState" class="hidden text-center py-12">
+                <div
+                    class="inline-flex items-center justify-center w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-full mb-3">
+                    <span class="material-symbols-outlined text-red-500">error</span>
+                </div>
+                <p class="text-slate-600 dark:text-slate-400 font-medium">해당 모델의 데이터를 찾을 수 없습니다.</p>
+            </div>
+        </div>
+
+        <!-- 하단 푸터/다크모드 토글 -->
+        <footer class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+            <p class="text-xs text-slate-400 font-medium tracking-tight">© 2026 AI Support Tool . All rights reserved.
+            </p>
+            <button onclick="document.documentElement.classList.toggle('dark')"
+                class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors">
+                <span class="material-symbols-outlined text-[20px]">dark_mode</span>
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        // --- 데이터 정의 ---
+        const MODEL_DATA = {
+            "29MT48DF": { "array1": "AGF30007001", "array2": "", "edge1": "", "edge2": "" },
+            "55UJ7240": { "array1": "", "array2": "", "edge1": "AGF78686801", "edge2": "AGF78686802" },
+            "32LD320": { "array1": "AGF78399501", "array2": "", "edge1": "", "edge2": "" },
+            "43UK6300PUE": { "array1": "AGF79043201", "array2": "", "edge1": "", "edge2": "" },
+            "32LF510B": { "array1": "AGF78401301", "array2": "", "edge1": "", "edge2": "" },
+            "43LF5100": { "array1": "AGF78401401", "array2": "", "edge1": "", "edge2": "" },
+            "49LF5100": { "array1": "AGF78401501", "array2": "", "edge1": "", "edge2": "" },
+            "43UF6400": { "array1": "AGF78401601", "array2": "", "edge1": "", "edge2": "" },
+            "49UF6400": { "array1": "AGF78401701", "array2": "", "edge1": "", "edge2": "" },
+            "32LF5600": { "array1": "AGF78401801", "array2": "", "edge1": "", "edge2": "" },
+            "42LF5600": { "array1": "AGF78401901", "array2": "", "edge1": "", "edge2": "" },
+            "43LF5400": { "array1": "AGF78402001", "array2": "", "edge1": "", "edge2": "" },
+            "49LF5400": { "array1": "AGF78402101", "array2": "", "edge1": "", "edge2": "" },
+            "42LD450": { "array1": "AGF78402201", "array2": "", "edge1": "", "edge2": "" },
+            "42LD550": { "array1": "AGF78402301", "array2": "", "edge1": "", "edge2": "" }
+        };
+
+        const POWER_OFF_DATA = {
+            "OFF_BY_CPUCMD": "CPU Command에 의해서 Power Off 동작을 수행하는 경우에 남기는 문구(현재 사용하지 않음)",
+            "OFF_BY_ABN": "아래 두 Case에 의한 비 정상적인 Power Off 동작을 수행하는 경우에 남기는 문구\nCase1 : Booting Fail이 발생하는 경우(Pipe Line Overflow 발생)\nCase2 : Resume Fail이 발생되어 Reboot을 수행하였으나 Main이 정상적으로 Booting 되지 못하는 경우",
+            "OFF_BY_KEYTIMEOUT": "Power Off 요청 이후, Main에서 일정시간(8초) 동안 Power Off 완료 Message나 Delay Command(8초 연장)를 보내지 못한 경우\nMicom에서 강제로 Power Off 동작을 수행하는 경우에 남기는 문구",
+            "OFF_BY_ACDET": "AC 전원이 흔들려 TV가 Reset 되는 경우에 남기는 문구(단, M3 Model의 경우 Micom SW Update 이후 Reboot하는 경우에도 해당 문구를 남김)",
+            "OFF_BY_RESET": "Main에서 Micom으로 Reset 요청을 수행하는 경우에 남기는 문구",
+            "OFF_BY_5VMNT": "DC On 도중 Relay 전원 안정성 Check 수행 시, POWER_DET(AC_DET) 전원이 불안정한 경우 Power Off를 수행하면서 남기는 문구",
+            "OFF_BY_NO_POLLING": "Main SoC의 Micom Thread와 Micom간 통신이 15초 이상 끊어지는 문제가 발생된 경우,\n원복을 위해 Auto Reboot을 수행하면서 남기는 문구 (Release Mode에서만 동작 됨)"
+        };
+
+        let currentMode = 'array'; // 'array' or 'power'
+
+        const searchInput = document.getElementById('searchInput');
+        const suggestionList = document.getElementById('suggestionList');
+        const emptyState = document.getElementById('emptyState');
+        const notFoundState = document.getElementById('notFoundState');
+        const resultCard = document.getElementById('resultCard');
+
+        const arrayLayout = document.getElementById('arrayLayout');
+        const powerLayout = document.getElementById('powerLayout');
+
+        const resultTitle = document.getElementById('resultTitle');
+        const valArray1 = document.getElementById('valArray1');
+        const valArray2 = document.getElementById('valArray2');
+        const valEdge1 = document.getElementById('valEdge1');
+        const valEdge2 = document.getElementById('valEdge2');
+        const valDescription = document.getElementById('valDescription');
+
+        // 모드 전환 함수
+        function switchMode(mode) {
+            currentMode = mode;
+            const tabArray = document.getElementById('tabArray');
+            const tabPower = document.getElementById('tabPower');
+            const headerIcon = document.getElementById('headerIcon');
+            const headerTitle = document.getElementById('headerTitle');
+            const headerDesc = document.getElementById('headerDesc');
+
+            // UI 업데이트
+            if (mode === 'array') {
+                tabArray.className = "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-primary shadow-sm";
+                tabPower.className = "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200";
+                headerIcon.textContent = "search_insights";
+                headerTitle.textContent = "어레이 정보 검색기";
+                headerDesc.textContent = "모델명을 입력하여 어레이 정보를 즉시 확인하세요.";
+                searchInput.placeholder = "모델명 입력 (예: 29MT48DF, 55UJ7240)";
+            } else {
+                tabPower.className = "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-primary shadow-sm";
+                tabArray.className = "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200";
+                headerIcon.textContent = "history_toggle_off";
+                headerTitle.textContent = "Power Off History";
+                headerDesc.textContent = "코드명을 입력하여 발생 원인을 진단하세요.";
+                searchInput.placeholder = "코드명 입력 (예: OFF_BY_ABN, RESET)";
+            }
+
+            // 검색어 초기화 및 상태 갱신
+            searchInput.value = '';
+            showState('empty');
+            hideSuggestions();
+            searchInput.focus();
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim().toUpperCase();
+
+            if (!query) {
+                showState('empty');
+                hideSuggestions();
+                return;
+            }
+
+            const dataSet = currentMode === 'array' ? MODEL_DATA : POWER_OFF_DATA;
+            const matches = Object.keys(dataSet).filter(key => key.includes(query));
+
+            if (matches.length > 0) {
+                renderSuggestions(matches, query);
+
+                if (dataSet[query]) {
+                    updateResult(query, dataSet[query]);
+                    showState('result');
+                } else {
+                    showState('empty');
+                    emptyState.innerHTML = `<span class="material-symbols-outlined text-5xl mb-2">find_in_page</span><p>'${query}' 포함 항목을 추천 목록에서 선택하세요.</p>`;
+                }
+            } else {
+                hideSuggestions();
+                showState('notFound');
+            }
+        });
+
+        function renderSuggestions(matches, query) {
+            suggestionList.innerHTML = '';
+            suggestionList.classList.remove('hidden');
+
+            matches.slice(0, 10).forEach(key => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-3 transition-colors border-b border-slate-50 dark:border-slate-800 last:border-0';
+
+                const highlighted = key.replace(new RegExp(query, 'gi'), `<span class="text-primary font-bold">${query}</span>`);
+                const icon = currentMode === 'array' ? 'tv' : 'settings_power';
+
+                button.innerHTML = `
+                    <span class="material-symbols-outlined text-slate-400 text-[20px]">${icon}</span>
+                    <span class="dark:text-white font-medium">${highlighted}</span>
+                `;
+
+                button.onclick = () => {
+                    const dataSet = currentMode === 'array' ? MODEL_DATA : POWER_OFF_DATA;
+                    searchInput.value = key;
+                    updateResult(key, dataSet[key]);
+                    showState('result');
+                    hideSuggestions();
+                };
+                suggestionList.appendChild(button);
+            });
+        }
+
+        function hideSuggestions() {
+            suggestionList.classList.add('hidden');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionList.contains(e.target)) {
+                hideSuggestions();
+            }
+        });
+
+        function showState(state) {
+            emptyState.classList.add('hidden');
+            notFoundState.classList.add('hidden');
+            resultCard.classList.add('hidden');
+            resultCard.classList.remove('scale-100', 'opacity-100');
+            resultCard.classList.add('scale-95', 'opacity-0');
+
+            if (state === 'empty') {
+                emptyState.classList.remove('hidden');
+            } else if (state === 'notFound') {
+                notFoundState.classList.remove('hidden');
+            } else if (state === 'result') {
+                resultCard.classList.remove('hidden');
+                setTimeout(() => {
+                    resultCard.classList.remove('scale-95', 'opacity-0');
+                    resultCard.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+        }
+
+        function updateResult(title, data) {
+            resultTitle.textContent = title;
+
+            if (currentMode === 'array') {
+                arrayLayout.classList.remove('hidden');
+                powerLayout.classList.add('hidden');
+
+                valArray1.textContent = data.array1 || '-';
+                valArray2.textContent = data.array2 || '-';
+                valEdge1.textContent = data.edge1 || '-';
+                valEdge2.textContent = data.edge2 || '-';
+
+                [valArray1, valArray2, valEdge1, valEdge2].forEach(el => {
+                    if (el.textContent !== '-') {
+                        el.classList.add('text-primary');
+                        el.closest('.info-item').classList.add('border-primary/30', 'bg-primary/5');
+                    } else {
+                        el.classList.remove('text-primary');
+                        el.closest('.info-item').classList.remove('border-primary/30', 'bg-primary/5');
+                    }
+                });
+            } else {
+                arrayLayout.classList.add('hidden');
+                powerLayout.classList.remove('hidden');
+                valDescription.textContent = data;
+            }
+        }
+    </script>
+</body>
+
+</html>
