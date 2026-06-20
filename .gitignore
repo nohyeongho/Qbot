@@ -1,0 +1,9 @@
+*.csv
+*.xlsx
+*.db
+raw.json
+__pycache__/
+.tmp_node/
+temp_node/
+dashboard/
+raw-data/

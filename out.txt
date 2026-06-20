@@ -1,0 +1,4 @@
+681:             <button class="tab active" onclick="switchTab('u',this)">👥 사용자 현황</button>
+682:             <button class="tab" onclick="switchTab('p',this)">📦 제품별 현황</button>
+683:             <button class="tab" onclick="switchTab('q',this)">📊 데이터 품질</button>
+1827:         function switchTab(name, btn) {
