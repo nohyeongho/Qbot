@@ -7,3 +7,10 @@ __pycache__/
 temp_node/
 dashboard/
 raw-data/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
